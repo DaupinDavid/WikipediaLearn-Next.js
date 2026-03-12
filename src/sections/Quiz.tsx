@@ -3,26 +3,24 @@
  * ============================================
  * PAGE DU QUIZ (Quiz.tsx)
  * ============================================
- * 
- * Cette page affiche le quiz interactif avec :
- * - Un compte à rebours de 45 secondes par question
- * - 4 réponses possibles (boutons cliquables)
- * - Une explication après chaque réponse
- * - Un récapitulatif des résultats à la fin
- * 
- * Le timer se décrémente automatiquement et passe
- * à la question suivante si le temps est écoulé.
+ * Animations Framer Motion ajoutées :
+ * - Questions slident à chaque nouvelle question
+ * - Boutons de réponse apparaissent en cascade
+ * - Feedback vert/rouge animé sur la réponse choisie
+ * - Explication glisse vers le haut
+ * - Écran de résultats avec stats qui pop en cascade
+ * - Badge nouveau badge avec bounce
+ * - Timer qui pulse en rouge quand < 10s
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { debutantQuestions, intermediaireQuestions, expertQuestions } from '@/data/questions';
 import type { DifficultyLevel, QuizResult } from '@/types';
 import { useGameStore, AVAILABLE_BADGES } from '@/store/gameStore';
 
-// Icônes
 import { Timer, CheckCircle, XCircle, AlertCircle, ChevronRight, Trophy, Star } from 'lucide-react';
 
-// Composants UI
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -33,454 +31,496 @@ import { Badge } from '@/components/ui/badge';
 // ============================================
 
 interface QuizProps {
-  /** Niveau du quiz à afficher */
   level: DifficultyLevel;
-  /** Fonction appelée quand le quiz est terminé */
   onComplete: () => void;
-  /** Fonction appelée quand l'utilisateur quitte */
   onExit: () => void;
 }
 
-// ============================================
-// CONSTANTES
-// ============================================
-
-const QUESTION_TIME = 45;  // 45 secondes par question
+const QUESTION_TIME = 45;
 
 // ============================================
 // COMPOSANT PRINCIPAL
 // ============================================
 
 export function Quiz({ level, onComplete, onExit }: QuizProps) {
-  // ============================================
-  // RÉCUPÉRATION DES QUESTIONS
-  // ============================================
-  // Selon le niveau, on récupère le bon tableau de questions
   const questions = {
     debutant: debutantQuestions,
     intermediaire: intermediaireQuestions,
     expert: expertQuestions
   }[level];
 
-  // ============================================
-  // STORE (données globales)
-  // ============================================
   const { addXP, completeLevel, saveQuizResults } = useGameStore();
-  
-  // ============================================
-  // ÉTATS LOCAUX
-  // ============================================
-  
-  // Index de la question actuelle (0 à 19)
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  
-  // Index de la réponse sélectionnée (-1 = aucune)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  
-  // Tableau des résultats de toutes les questions
-  const [results, setResults] = useState<QuizResult[]>([]);
-  
-  // Temps restant (en secondes)
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
-  
-  // Afficher l'explication ?
-  const [showExplanation, setShowExplanation] = useState(false);
-  
-  // Quiz terminé ?
-  const [quizCompleted, setQuizCompleted] = useState(false);
-  
-  // Nouveau badge débloqué ?
-  const [newBadge, setNewBadge] = useState<string | null>(null);
 
-  // Question actuelle
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer,  setSelectedAnswer]  = useState<number | null>(null);
+  const [results,         setResults]         = useState<QuizResult[]>([]);
+  const [timeLeft,        setTimeLeft]        = useState(QUESTION_TIME);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [quizCompleted,   setQuizCompleted]   = useState(false);
+  const [newBadge,        setNewBadge]        = useState<string | null>(null);
+
   const currentQ = questions[currentQuestion];
 
   // ============================================
-  // EFFET : Gestion du timer
+  // TIMER
   // ============================================
   useEffect(() => {
-    // Si on montre l'explication ou que le quiz est fini, on arrête le timer
     if (showExplanation || quizCompleted) return;
-
-    // Crée un intervalle qui décrémente le timer chaque seconde
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleTimeUp();  // Temps écoulé !
-          return 0;
-        }
+        if (prev <= 1) { handleTimeUp(); return 0; }
         return prev - 1;
       });
     }, 1000);
-
-    // Nettoyage : supprime l'intervalle quand le composant se démonte
     return () => clearInterval(timer);
   }, [currentQuestion, showExplanation, quizCompleted]);
 
-  // ============================================
-  // FONCTION : Temps écoulé
-  // ============================================
   const handleTimeUp = useCallback(() => {
     if (selectedAnswer === null) {
-      // Crée un résultat "faux" car temps écoulé
       const result: QuizResult = {
         questionId: currentQ.id,
-        selectedAnswer: -1,  // -1 = temps écoulé
+        selectedAnswer: -1,
         correct: false,
         timeSpent: QUESTION_TIME
       };
-      setResults([...results, result]);
+      setResults(prev => [...prev, result]);
       setShowExplanation(true);
     }
-  }, [currentQ, results, selectedAnswer]);
+  }, [currentQ, selectedAnswer]);
 
-  // ============================================
-  // FONCTION : Sélectionner une réponse
-  // ============================================
   const handleSelectAnswer = (index: number) => {
-    // Empêche de changer de réponse si déjà sélectionnée
     if (selectedAnswer !== null || showExplanation) return;
-    
     setSelectedAnswer(index);
-    
-    // Crée le résultat
     const result: QuizResult = {
       questionId: currentQ.id,
       selectedAnswer: index,
       correct: index === currentQ.correctAnswer,
       timeSpent: QUESTION_TIME - timeLeft
     };
-    
-    setResults([...results, result]);
+    setResults(prev => [...prev, result]);
     setShowExplanation(true);
   };
 
-  // ============================================
-  // FONCTION : Question suivante
-  // ============================================
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
-      // Passe à la question suivante
       setCurrentQuestion(currentQuestion + 1);
       setSelectedAnswer(null);
       setShowExplanation(false);
-      setTimeLeft(QUESTION_TIME);  // Réinitialise le timer
+      setTimeLeft(QUESTION_TIME);
     } else {
-      // Dernière question -> fin du quiz
       finishQuiz();
     }
   };
 
-  // ============================================
-  // FONCTION : Terminer le quiz
-  // ============================================
   const finishQuiz = () => {
-    // Compte les bonnes réponses
     const correctCount = results.filter(r => r.correct).length;
-    
-    // Calcule le temps total
-    const totalTime = results.reduce((sum, r) => sum + r.timeSpent, 0);
-    
-    // Calcule les XP gagnés (10 XP par bonne réponse + bonus 100 si parfait)
-    const xpEarned = correctCount * 10 + (correctCount === 20 ? 100 : 0);
+    const totalTime    = results.reduce((sum, r) => sum + r.timeSpent, 0);
+    const xpEarned     = correctCount * 10 + (correctCount === 20 ? 100 : 0);
     addXP(xpEarned);
-    
-    // Sauvegarde les résultats
     saveQuizResults(level, results);
-    
-    // Valide le niveau si score >= 12/20
-    if (correctCount >= 12) {
-      completeLevel(level);
-    }
-    
-    // Vérifie les badges
-    if (correctCount === 20) {
-      setNewBadge(AVAILABLE_BADGES.PERFECT_QUIZ.name);
-    } else if (totalTime < 600) {
-      setNewBadge(AVAILABLE_BADGES.SPEED_RUNNER.name);
-    }
-    
+    if (correctCount >= 12) completeLevel(level);
+    if (correctCount === 20)   setNewBadge(AVAILABLE_BADGES.PERFECT_QUIZ.name);
+    else if (totalTime < 600)  setNewBadge(AVAILABLE_BADGES.SPEED_RUNNER.name);
     setQuizCompleted(true);
   };
 
-  // ============================================
-  // FONCTION : Nom du niveau
-  // ============================================
   const getLevelName = () => {
     switch (level) {
-      case 'debutant': return 'Débutant';
+      case 'debutant':      return 'Débutant';
       case 'intermediaire': return 'Intermédiaire';
-      case 'expert': return 'Expert';
+      case 'expert':        return 'Expert';
     }
   };
 
+  // Couleur du timer
+  const timerUrgent = timeLeft <= 10;
+
   // ============================================
-  // RENDU : Écran de résultats
+  // RENDU : Résultats
   // ============================================
   if (quizCompleted) {
     const correctCount = results.filter(r => r.correct).length;
-    const percentage = Math.round((correctCount / questions.length) * 100);
-    const passed = correctCount >= 12;  // 12/20 minimum pour valider
+    const percentage   = Math.round((correctCount / questions.length) * 100);
+    const passed       = correctCount >= 12;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
-          
-          {/* Carte principale des résultats */}
-          <Card className="text-center">
-            <CardContent className="p-8">
-              {/* Badge nouveau */}
-              {newBadge && (
-                <div className="mb-6 animate-bounce">
-                  <Badge className="bg-yellow-400 text-yellow-900 px-4 py-2 text-lg">
-                    <Trophy className="w-5 h-5 mr-2" />
-                    Nouveau badge débloqué : {newBadge}
-                  </Badge>
-                </div>
-              )}
 
-              {/* Icône de résultat */}
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                passed ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                {passed ? (
-                  <Trophy className="w-12 h-12 text-green-600" />
-                ) : (
-                  <AlertCircle className="w-12 h-12 text-red-600" />
-                )}
-              </div>
+          {/* Carte résultats — bounce à l'entrée */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 30 }}
+            animate={{ opacity: 1, scale: 1,    y: 0  }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          >
+            <Card className="text-center">
+              <CardContent className="p-8">
 
-              {/* Titre */}
-              <h2 className="text-3xl font-bold mb-2">
-                {passed ? 'Félicitations !' : 'Quiz terminé'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {passed 
-                  ? `Vous avez validé le niveau ${getLevelName()} !`
-                  : `Vous n'avez pas atteint le score minimum (12/20) pour valider le niveau.`
-                }
-              </p>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-amber-50 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-amber-600">{correctCount}/20</div>
-                  <div className="text-sm text-gray-600">Bonnes réponses</div>
-                </div>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600">{percentage}%</div>
-                  <div className="text-sm text-gray-600">Score</div>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-purple-600">+{correctCount * 10}</div>
-                  <div className="text-sm text-gray-600">XP gagné</div>
-                </div>
-              </div>
-
-              {/* Bouton de retour */}
-              <div className="space-y-3">
-                {passed ? (
-                  <Button 
-                    onClick={onComplete}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                    size="lg"
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Continuer
-                  </Button>
-                ) : (
-                  <>
-                    <Button 
-                      onClick={onComplete}
-                      variant="outline"
-                      className="w-full"
-                      size="lg"
+                {/* Nouveau badge */}
+                <AnimatePresence>
+                  {newBadge && (
+                    <motion.div
+                      className="mb-6"
+                      initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                      animate={{ opacity: 1, y: 0,   scale: 1    }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 15, delay: 0.4 }}
                     >
-                      Retour à l'accueil
-                    </Button>
-                    <p className="text-sm text-gray-500">
-                      Vous pouvez réessayer le quiz plus tard
-                    </p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      <Badge className="bg-yellow-400 text-yellow-900 px-4 py-2 text-lg">
+                        <Trophy className="w-5 h-5 mr-2" />
+                        Nouveau badge : {newBadge}
+                      </Badge>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Icône résultat */}
+                <motion.div
+                  className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                    passed ? 'bg-green-100' : 'bg-red-100'
+                  }`}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.1 }}
+                >
+                  {passed
+                    ? <Trophy    className="w-12 h-12 text-green-600" />
+                    : <AlertCircle className="w-12 h-12 text-red-600" />
+                  }
+                </motion.div>
+
+                {/* Titre */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0  }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <h2 className="text-3xl font-bold mb-2">
+                    {passed ? 'Félicitations !' : 'Quiz terminé'}
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    {passed
+                      ? `Vous avez validé le niveau ${getLevelName()} !`
+                      : `Vous n'avez pas atteint le score minimum (12/20) pour valider le niveau.`
+                    }
+                  </p>
+                </motion.div>
+
+                {/* Stats — cascade */}
+                <motion.div
+                  className="grid grid-cols-3 gap-4 mb-8"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } } }}
+                >
+                  {[
+                    { value: `${correctCount}/20`, label: 'Bonnes réponses', bg: 'bg-amber-50',  text: 'text-amber-600'  },
+                    { value: `${percentage}%`,     label: 'Score',           bg: 'bg-blue-50',   text: 'text-blue-600'   },
+                    { value: `+${correctCount*10}`,label: 'XP gagné',        bg: 'bg-purple-50', text: 'text-purple-600' },
+                  ].map(({ value, label, bg, text }) => (
+                    <motion.div
+                      key={label}
+                      className={`${bg} p-4 rounded-lg`}
+                      variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                    >
+                      <div className={`text-3xl font-bold ${text}`}>{value}</div>
+                      <div className="text-sm text-gray-600">{label}</div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                {/* Boutons */}
+                <motion.div
+                  className="space-y-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  {passed ? (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        onClick={onComplete}
+                        className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                        size="lg"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Continuer
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <>
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                        <Button onClick={onComplete} variant="outline" className="w-full" size="lg">
+                          Retour à l'accueil
+                        </Button>
+                      </motion.div>
+                      <p className="text-sm text-gray-500">Vous pouvez réessayer le quiz plus tard</p>
+                    </>
+                  )}
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* Révision des réponses */}
-          <Card className="mt-6">
-            <CardContent className="p-6">
-              <h3 className="font-bold text-lg mb-4">Révision des réponses</h3>
-              <div className="space-y-4">
-                {results.map((result, idx) => {
-                  const question = questions.find(q => q.id === result.questionId);
-                  if (!question) return null;
-                  
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`p-4 rounded-lg ${
-                        result.correct ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {result.correct ? (
-                          <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                        )}
-                        <div className="flex-1">
-                          <p className="font-medium mb-2">{question.question}</p>
-                          <p className="text-sm text-gray-600">
-                            Votre réponse: {result.selectedAnswer >= 0 ? question.options[result.selectedAnswer] : 'Temps écoulé'}
-                          </p>
-                          {!result.correct && (
-                            <p className="text-sm text-green-600 mt-1">
-                              Bonne réponse: {question.options[question.correctAnswer]}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0  }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+          >
+            <Card className="mt-6">
+              <CardContent className="p-6">
+                <h3 className="font-bold text-lg mb-4">Révision des réponses</h3>
+                <motion.div
+                  className="space-y-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.06, delayChildren: 0.6 } } }}
+                >
+                  {results.map((result, idx) => {
+                    const question = questions.find(q => q.id === result.questionId);
+                    if (!question) return null;
+                    return (
+                      <motion.div
+                        key={idx}
+                        className={`p-4 rounded-lg ${
+                          result.correct
+                            ? 'bg-green-50 border border-green-200'
+                            : 'bg-red-50 border border-red-200'
+                        }`}
+                        variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }}
+                      >
+                        <div className="flex items-start gap-3">
+                          {result.correct
+                            ? <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                            : <XCircle    className="w-5 h-5 text-red-500 mt-0.5"   />
+                          }
+                          <div className="flex-1">
+                            <p className="font-medium mb-2">{question.question}</p>
+                            <p className="text-sm text-gray-600">
+                              Votre réponse : {result.selectedAnswer >= 0 ? question.options[result.selectedAnswer] : 'Temps écoulé'}
                             </p>
-                          )}
-                          <p className="text-sm text-gray-500 mt-2 italic">
-                            {question.explanation}
-                          </p>
+                            {!result.correct && (
+                              <p className="text-sm text-green-600 mt-1">
+                                Bonne réponse : {question.options[question.correctAnswer]}
+                              </p>
+                            )}
+                            <p className="text-sm text-gray-500 mt-2 italic">{question.explanation}</p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
         </div>
       </div>
     );
   }
 
   // ============================================
-  // RENDU : Interface du quiz en cours
+  // RENDU : Quiz en cours
   // ============================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 py-8">
       <div className="container mx-auto px-4 max-w-3xl">
-        
+
         {/* En-tête */}
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={onExit}>
-            Quitter
-          </Button>
+        <motion.div
+          className="flex items-center justify-between mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0  }}
+          transition={{ duration: 0.4 }}
+        >
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button variant="ghost" onClick={onExit}>Quitter</Button>
+          </motion.div>
           <div className="flex items-center gap-2">
             <Star className="w-5 h-5 text-amber-500" />
             <span className="font-medium">{getLevelName()}</span>
           </div>
           <div className="w-20" />
-        </div>
+        </motion.div>
 
         {/* Barre de progression */}
-        <div className="mb-6">
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+        >
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>Question {currentQuestion + 1} sur {questions.length}</span>
             <span>{Math.round(((currentQuestion + 1) / questions.length) * 100)}%</span>
           </div>
           <Progress value={((currentQuestion + 1) / questions.length) * 100} className="h-2" />
-        </div>
+        </motion.div>
 
         {/* Timer */}
-        <Card className={`mb-6 ${timeLeft <= 10 ? 'border-red-400' : ''}`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center gap-3">
-              <Timer className={`w-6 h-6 ${timeLeft <= 10 ? 'text-red-500 animate-pulse' : 'text-amber-600'}`} />
-              <span className={`text-2xl font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-amber-900'}`}>
-                {timeLeft}s
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Question */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-6">{currentQ.question}</h2>
-            
-            {/* Boutons de réponses */}
-            <div className="space-y-3">
-              {currentQ.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSelectAnswer(index)}
-                  disabled={selectedAnswer !== null}
-                  className={`w-full p-4 rounded-lg text-left transition-all ${
-                    selectedAnswer === null
-                      ? 'hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300'
-                      : selectedAnswer === index
-                        ? index === currentQ.correctAnswer
-                          ? 'bg-green-100 border-2 border-green-500'
-                          : 'bg-red-100 border-2 border-red-500'
-                        : index === currentQ.correctAnswer && selectedAnswer !== null
-                          ? 'bg-green-100 border-2 border-green-500'
-                          : 'bg-gray-50 border-2 border-gray-200 opacity-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Lettre (A, B, C, D) */}
-                    <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-medium text-sm">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    <span>{option}</span>
-                    
-                    {/* Icône de validation */}
-                    {selectedAnswer === index && (
-                      index === currentQ.correctAnswer ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500 ml-auto" />
-                      )
-                    )}
-                    {selectedAnswer !== null && index === currentQ.correctAnswer && selectedAnswer !== index && (
-                      <CheckCircle className="w-5 h-5 text-green-500 ml-auto" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Explication (affichée après réponse) */}
-        {showExplanation && (
-          <Card className={`mb-6 ${
-            selectedAnswer === currentQ.correctAnswer ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'
-          }`}>
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className={timerUrgent ? 'border-red-400' : ''}>
             <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                {selectedAnswer === currentQ.correctAnswer ? (
-                  <CheckCircle className="w-6 h-6 text-green-500 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-6 h-6 text-amber-500 mt-0.5" />
-                )}
-                <div>
-                  <p className="font-medium mb-1">
-                    {selectedAnswer === currentQ.correctAnswer ? 'Bonne réponse !' : 'Explication'}
-                  </p>
-                  <p className="text-gray-600">{currentQ.explanation}</p>
-                </div>
+              <div className="flex items-center justify-center gap-3">
+                <motion.div
+                  animate={timerUrgent ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 0.6, repeat: Infinity }}
+                >
+                  <Timer className={`w-6 h-6 ${timerUrgent ? 'text-red-500' : 'text-amber-600'}`} />
+                </motion.div>
+                <motion.span
+                  key={timeLeft}
+                  className={`text-2xl font-bold ${timerUrgent ? 'text-red-500' : 'text-amber-900'}`}
+                  initial={{ scale: timerUrgent ? 1.3 : 1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {timeLeft}s
+                </motion.span>
               </div>
-              
-              {/* Bouton question suivante */}
-              <Button
-                onClick={handleNext}
-                className="mt-4 w-full bg-gradient-to-r from-amber-600 to-orange-600"
-              >
-                {currentQuestion < questions.length - 1 ? (
-                  <>
-                    Question suivante
-                    <ChevronRight className="w-4 h-4 ml-2" />
-                  </>
-                ) : (
-                  'Voir les résultats'
-                )}
-              </Button>
+              {/* Barre de timer */}
+              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full ${timerUrgent ? 'bg-red-500' : 'bg-amber-500'}`}
+                  initial={{ width: '100%' }}
+                  animate={{ width: `${(timeLeft / QUESTION_TIME) * 100}%` }}
+                  transition={{ duration: 0.9, ease: 'linear' }}
+                />
+              </div>
             </CardContent>
           </Card>
-        )}
+        </motion.div>
+
+        {/* Question — slide à chaque changement */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQuestion}
+            initial={{ opacity: 0, x: 60  }}
+            animate={{ opacity: 1, x: 0   }}
+            exit={{    opacity: 0, x: -60 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold mb-6">{currentQ.question}</h2>
+
+                {/* Boutons de réponse — cascade */}
+                <motion.div
+                  className="space-y-3"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+                >
+                  {currentQ.options.map((option, index) => {
+                    const isSelected = selectedAnswer === index;
+                    const isCorrect  = index === currentQ.correctAnswer;
+                    const answered   = selectedAnswer !== null;
+
+                    let bgClass = 'hover:bg-amber-50 border-2 border-gray-200 hover:border-amber-300';
+                    if (answered) {
+                      if (isSelected && isCorrect)  bgClass = 'bg-green-100 border-2 border-green-500';
+                      else if (isSelected)           bgClass = 'bg-red-100 border-2 border-red-500';
+                      else if (isCorrect)            bgClass = 'bg-green-100 border-2 border-green-500';
+                      else                           bgClass = 'bg-gray-50 border-2 border-gray-200 opacity-50';
+                    }
+
+                    return (
+                      <motion.button
+                        key={index}
+                        onClick={() => handleSelectAnswer(index)}
+                        disabled={answered}
+                        className={`w-full p-4 rounded-lg text-left transition-colors ${bgClass}`}
+                        variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                        whileHover={!answered ? { scale: 1.01, x: 4 } : {}}
+                        whileTap={!answered ? { scale: 0.98 } : {}}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-medium text-sm shrink-0">
+                            {String.fromCharCode(65 + index)}
+                          </span>
+                          <span>{option}</span>
+
+                          {/* Icône feedback */}
+                          <AnimatePresence>
+                            {answered && (isSelected || isCorrect) && (
+                              <motion.div
+                                className="ml-auto"
+                                initial={{ scale: 0, rotate: -90 }}
+                                animate={{ scale: 1, rotate: 0   }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                              >
+                                {isCorrect
+                                  ? <CheckCircle className="w-5 h-5 text-green-500" />
+                                  : <XCircle     className="w-5 h-5 text-red-500"   />
+                                }
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Explication — glisse vers le haut */}
+        <AnimatePresence>
+          {showExplanation && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0  }}
+              exit={{    opacity: 0, y: 20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className={`mb-6 ${
+                selectedAnswer === currentQ.correctAnswer
+                  ? 'bg-green-50 border-green-300'
+                  : 'bg-amber-50 border-amber-300'
+              }`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    {selectedAnswer === currentQ.correctAnswer
+                      ? <CheckCircle className="w-6 h-6 text-green-500 mt-0.5" />
+                      : <AlertCircle className="w-6 h-6 text-amber-500 mt-0.5" />
+                    }
+                    <div>
+                      <p className="font-medium mb-1">
+                        {selectedAnswer === currentQ.correctAnswer ? 'Bonne réponse !' : 'Explication'}
+                      </p>
+                      <p className="text-gray-600">{currentQ.explanation}</p>
+                    </div>
+                  </div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Button
+                      onClick={handleNext}
+                      className="mt-4 w-full bg-gradient-to-r from-amber-600 to-orange-600"
+                    >
+                      {currentQuestion < questions.length - 1 ? (
+                        <>Question suivante <ChevronRight className="w-4 h-4 ml-2" /></>
+                      ) : (
+                        'Voir les résultats'
+                      )}
+                    </Button>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
     </div>
   );
