@@ -11,18 +11,26 @@
  * - Fix hydration Zustand (localStorage)
  */
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from '@/store/gameStore';
-import { LEVELS } from '@/types';
-import type { DifficultyLevel } from '@/types';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useGameStore } from "@/store/gameStore";
+import { LEVELS } from "@/content/levels";
+import type { DifficultyLevel } from "@/types";
 
-import { BookOpen, Trophy, Star, Target, RotateCcw, GraduationCap, Skull } from 'lucide-react';
+import {
+  BookOpen,
+  Trophy,
+  Star,
+  Target,
+  RotateCcw,
+  GraduationCap,
+  Skull,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
 // ============================================
 // VARIANTS D'ANIMATION (configurations réutilisables)
@@ -53,7 +61,7 @@ const staggerContainer = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.12,  // 120ms entre chaque enfant
+      staggerChildren: 0.12, // 120ms entre chaque enfant
     },
   },
 };
@@ -64,7 +72,7 @@ const badgePop = {
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring', stiffness: 400, damping: 15 },
+    transition: { type: "spring", stiffness: 400, damping: 15 },
   },
 };
 
@@ -82,8 +90,11 @@ interface HomeProps {
 // COMPOSANT PRINCIPAL
 // ============================================
 
-export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps) {
-  
+export function Home({
+  onSelectLevel,
+  onStartExam,
+  onStartSurvival,
+}: HomeProps) {
   // ============================================
   // FIX HYDRATION ZUSTAND
   // Le store Zustand lit localStorage côté client seulement.
@@ -91,23 +102,29 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
   // On attend que le composant soit monté avant d'afficher les données du store.
   // ============================================
   const [isClient, setIsClient] = useState(false);
-  useEffect(() => { setIsClient(true); }, []);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-  const { progress, canAccessLevel, getLevelScore, resetProgress } = useGameStore();
+  const { progress, canAccessLevel, getLevelScore, resetProgress } =
+    useGameStore();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Valeurs sûres pour le SSR (avant hydration)
-  const totalXP         = isClient ? progress.totalXP : 0;
-  const badgesCount     = isClient ? progress.badges.length : 0;
-  const completedCount  = isClient ? progress.completedLevels.length : 0;
-  const badges          = isClient ? progress.badges : [];
+  const totalXP = isClient ? progress.totalXP : 0;
+  const badgesCount = isClient ? progress.badges.length : 0;
+  const completedCount = isClient ? progress.completedLevels.length : 0;
+  const badges = isClient ? progress.badges : [];
 
   const getLevelStatus = (level: DifficultyLevel) => {
-    if (!isClient) return { text: 'Disponible', color: 'bg-blue-500' };
-    if (progress.completedLevels.includes(level)) return { text: 'Complété',   color: 'bg-green-500'  };
-    if (progress.currentLevel === level)           return { text: 'En cours',   color: 'bg-yellow-500' };
-    if (canAccessLevel(level))                     return { text: 'Disponible', color: 'bg-blue-500'   };
-    return { text: 'Verrouillé', color: 'bg-gray-400' };
+    if (!isClient) return { text: "Disponible", color: "bg-blue-500" };
+    if (progress.completedLevels.includes(level))
+      return { text: "Complété", color: "bg-green-500" };
+    if (progress.currentLevel === level)
+      return { text: "En cours", color: "bg-yellow-500" };
+    if (canAccessLevel(level))
+      return { text: "Disponible", color: "bg-blue-500" };
+    return { text: "Verrouillé", color: "bg-gray-400" };
   };
 
   const peutCommencerExamen = isClient && progress.completedLevels.length === 3;
@@ -117,7 +134,6 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
   // ============================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-
       {/* ============================================
           EN-TÊTE — glisse vers le bas
           ============================================ */}
@@ -126,7 +142,7 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
         variants={slideDown}
         initial="hidden"
         animate="visible"
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
@@ -170,7 +186,6 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
           CONTENU PRINCIPAL
           ============================================ */}
       <main className="container mx-auto px-4 py-8">
-
         {/* ----------------------------------------
             CARTE : Progression globale
             Apparaît en fondu + glissement
@@ -194,7 +209,10 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                   <span>Progression globale</span>
                   <span>{Math.round((completedCount / 3) * 100)}%</span>
                 </div>
-                <Progress value={(completedCount / 3) * 100} className="h-3 bg-amber-100" />
+                <Progress
+                  value={(completedCount / 3) * 100}
+                  className="h-3 bg-amber-100"
+                />
 
                 {/* Scores par niveau — apparaissent en cascade */}
                 <motion.div
@@ -204,9 +222,24 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                   animate="visible"
                 >
                   {[
-                    { level: 'debutant'      as DifficultyLevel, label: 'Débutant',      bg: 'bg-green-50',  text: 'text-green-600'  },
-                    { level: 'intermediaire' as DifficultyLevel, label: 'Intermédiaire', bg: 'bg-blue-50',   text: 'text-blue-600'   },
-                    { level: 'expert'        as DifficultyLevel, label: 'Expert',        bg: 'bg-purple-50', text: 'text-purple-600' },
+                    {
+                      level: "debutant" as DifficultyLevel,
+                      label: "Débutant",
+                      bg: "bg-green-50",
+                      text: "text-green-600",
+                    },
+                    {
+                      level: "intermediaire" as DifficultyLevel,
+                      label: "Intermédiaire",
+                      bg: "bg-blue-50",
+                      text: "text-blue-600",
+                    },
+                    {
+                      level: "expert" as DifficultyLevel,
+                      label: "Expert",
+                      bg: "bg-purple-50",
+                      text: "text-purple-600",
+                    },
                   ].map(({ level, label, bg, text }) => (
                     <motion.div
                       key={level}
@@ -235,20 +268,22 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
           animate="visible"
         >
           {LEVELS.map((level) => {
-            const statut    = getLevelStatus(level.id);
+            const statut = getLevelStatus(level.id);
             const estBloque = isClient ? !canAccessLevel(level.id) : false;
-            const score     = isClient ? getLevelScore(level.id) : 0;
+            const score = isClient ? getLevelScore(level.id) : 0;
 
             return (
               <motion.div key={level.id} variants={fadeUp}>
                 <motion.div
                   whileHover={!estBloque ? { scale: 1.04, y: -4 } : {}}
                   whileTap={!estBloque ? { scale: 0.97 } : {}}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
                   <Card
                     className={`relative overflow-hidden ${
-                      estBloque ? 'opacity-70' : 'cursor-pointer shadow-lg hover:shadow-xl'
+                      estBloque
+                        ? "opacity-70"
+                        : "cursor-pointer shadow-lg hover:shadow-xl"
                     } ${level.bgColor}`}
                     onClick={() => !estBloque && onSelectLevel(level.id)}
                   >
@@ -267,16 +302,23 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                     </CardHeader>
 
                     <CardContent>
-                      <p className="text-gray-600 text-sm mb-4">{level.description}</p>
+                      <p className="text-gray-600 text-sm mb-4">
+                        {level.description}
+                      </p>
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-500">
-                          {score > 0 ? `${score}/20 questions` : '20 questions'}
+                          {score > 0 ? `${score}/20 questions` : "20 questions"}
                         </div>
-                        <div className="text-sm text-gray-500">45s/question</div>
+                        <div className="text-sm text-gray-500">
+                          45s/question
+                        </div>
                       </div>
                       {score > 0 && (
                         <div className="mt-3">
-                          <Progress value={(score / 20) * 100} className="h-2" />
+                          <Progress
+                            value={(score / 20) * 100}
+                            className="h-2"
+                          />
                         </div>
                       )}
                     </CardContent>
@@ -305,17 +347,26 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
           transition={{ delay: 0.5, duration: 0.5 }}
         >
           <motion.div
-            animate={{ boxShadow: ['0 0 0px #ea580c', '0 0 20px #ea580c', '0 0 0px #ea580c'] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{
+              boxShadow: [
+                "0 0 0px #ea580c",
+                "0 0 20px #ea580c",
+                "0 0 0px #ea580c",
+              ],
+            }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             className="rounded-xl mb-8"
           >
             <Card className="bg-gradient-to-r from-gray-900 to-black border-2 border-orange-600 text-white overflow-hidden relative">
-
               {/* Crâne décoratif */}
               <motion.div
                 className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl opacity-10 select-none"
                 animate={{ rotate: [-3, 3, -3] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
                 💀
               </motion.div>
@@ -334,15 +385,18 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
 
               <CardContent>
                 <p className="text-gray-300 mb-4">
-                  50 questions mélangées. Une erreur et tout s'arrête.
-                  Testez vos limites et grimpez dans le classement !
+                  50 questions mélangées. Une erreur et tout s'arrête. Testez
+                  vos limites et grimpez dans le classement !
                 </p>
                 <div className="flex items-center gap-6 mb-6 text-sm text-gray-400">
                   <span>💀 Une vie</span>
                   <span>⏱️ 20s / question</span>
                   <span>🏆 Classement sauvegardé</span>
                 </div>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                >
                   <Button
                     onClick={onStartSurvival}
                     className="w-full bg-gradient-to-r from-orange-600 to-red-700 hover:from-orange-700 hover:to-red-800 font-bold text-base"
@@ -367,10 +421,13 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
           transition={{ delay: 0.6, duration: 0.5 }}
           className="mb-8"
         >
-          <Card className={peutCommencerExamen
-            ? 'border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50'
-            : 'border-gray-200 bg-gray-50'
-          }>
+          <Card
+            className={
+              peutCommencerExamen
+                ? "border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50"
+                : "border-gray-200 bg-gray-50"
+            }
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="w-6 h-6" />
@@ -381,27 +438,33 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
               <p className="text-gray-600 mb-4">
                 {peutCommencerExamen
                   ? "Félicitations ! Vous pouvez maintenant passer l'examen final pour obtenir votre diplôme."
-                  : "Terminez les 3 niveaux pour débloquer l'examen final."
-                }
+                  : "Terminez les 3 niveaux pour débloquer l'examen final."}
               </p>
               <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <Target className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">3 séries de 20 questions</span>
+                  <span className="text-sm text-gray-600">
+                    3 séries de 20 questions
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Questions mélangées</span>
+                  <span className="text-sm text-gray-600">
+                    Questions mélangées
+                  </span>
                 </div>
               </div>
-              <motion.div whileHover={peutCommencerExamen ? { scale: 1.02 } : {}} whileTap={peutCommencerExamen ? { scale: 0.97 } : {}}>
+              <motion.div
+                whileHover={peutCommencerExamen ? { scale: 1.02 } : {}}
+                whileTap={peutCommencerExamen ? { scale: 0.97 } : {}}
+              >
                 <Button
                   onClick={onStartExam}
                   disabled={!peutCommencerExamen}
                   className={`w-full ${
                     peutCommencerExamen
-                      ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700'
-                      : 'bg-gray-400'
+                      ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700"
+                      : "bg-gray-400"
                   }`}
                   size="lg"
                 >
@@ -442,11 +505,16 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                           <DialogTrigger asChild>
                             <motion.div
                               className="flex items-center gap-2 bg-gradient-to-r from-amber-100 to-yellow-100 px-4 py-2 rounded-full cursor-pointer"
-                              whileHover={{ scale: 1.08, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                              whileHover={{
+                                scale: 1.08,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              }}
                               whileTap={{ scale: 0.95 }}
                             >
                               <span className="text-2xl">{badge.icon}</span>
-                              <span className="font-medium text-amber-900">{badge.name}</span>
+                              <span className="font-medium text-amber-900">
+                                {badge.name}
+                              </span>
                             </motion.div>
                           </DialogTrigger>
                           <DialogContent>
@@ -455,10 +523,15 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                                 <span className="text-3xl">{badge.icon}</span>
                                 {badge.name}
                               </DialogTitle>
-                              <DialogDescription>{badge.description}</DialogDescription>
+                              <DialogDescription>
+                                {badge.description}
+                              </DialogDescription>
                             </DialogHeader>
                             <p className="text-sm text-gray-500">
-                              Débloqué le {new Date(badge.unlockedAt).toLocaleDateString('fr-FR')}
+                              Débloqué le{" "}
+                              {new Date(badge.unlockedAt).toLocaleDateString(
+                                "fr-FR",
+                              )}
                             </p>
                           </DialogContent>
                         </Dialog>
@@ -505,15 +578,18 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                 initial={{ scale: 0.85, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.85, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
               >
                 <Card className="max-w-md w-full mx-4">
                   <CardHeader>
-                    <CardTitle className="text-red-600">Réinitialiser ?</CardTitle>
+                    <CardTitle className="text-red-600">
+                      Réinitialiser ?
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-600 mb-4">
-                      Êtes-vous sûr de vouloir réinitialiser votre progression ? Cette action est irréversible.
+                      Êtes-vous sûr de vouloir réinitialiser votre progression ?
+                      Cette action est irréversible.
                     </p>
                     <div className="flex gap-3">
                       <Button
@@ -525,7 +601,10 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
                       </Button>
                       <Button
                         variant="destructive"
-                        onClick={() => { resetProgress(); setShowResetConfirm(false); }}
+                        onClick={() => {
+                          resetProgress();
+                          setShowResetConfirm(false);
+                        }}
                         className="flex-1"
                       >
                         Réinitialiser
@@ -537,7 +616,6 @@ export function Home({ onSelectLevel, onStartExam, onStartSurvival }: HomeProps)
             </motion.div>
           )}
         </AnimatePresence>
-
       </main>
     </div>
   );
