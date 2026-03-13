@@ -1,15 +1,4 @@
 "use client";
-/**
- * ============================================
- * PAGE D'ACCUEIL (Home.tsx)
- * ============================================
- * Animations Framer Motion ajoutées :
- * - Header glisse vers le bas au chargement
- * - Cards des niveaux apparaissent en cascade
- * - Card Mode Survie pulse en continu
- * - Badges pop un par un
- * - Fix hydration Zustand (localStorage)
- */
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,45 +29,33 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// ============================================
-// VARIANTS D'ANIMATION (configurations réutilisables)
-// ============================================
-
-/** Fondu + glissement vers le haut */
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0 },
 };
 
-/** Header glisse vers le bas */
 const slideDown = {
   hidden: { opacity: 0, y: -40 },
   visible: { opacity: 1, y: 0 },
 };
 
-/** Conteneur qui anime ses enfants en cascade */
 const staggerContainer = {
   hidden: {},
   visible: {
     transition: {
-      staggerChildren: 0.12, // 120ms entre chaque enfant
+      staggerChildren: 0.12,
     },
   },
 };
 
-/** Badges pop avec un effet de rebond */
 const badgePop = {
   hidden: { opacity: 0, scale: 0.5 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { type: "spring", stiffness: 400, damping: 15 },
+    transition: { type: "spring" as const, stiffness: 400, damping: 15 },
   },
 };
-
-// ============================================
-// PROPS
-// ============================================
 
 interface HomeProps {
   onSelectLevel: (level: DifficultyLevel) => void;
@@ -86,21 +63,11 @@ interface HomeProps {
   onStartSurvival: () => void;
 }
 
-// ============================================
-// COMPOSANT PRINCIPAL
-// ============================================
-
 export function Home({
   onSelectLevel,
   onStartExam,
   onStartSurvival,
 }: HomeProps) {
-  // ============================================
-  // FIX HYDRATION ZUSTAND
-  // Le store Zustand lit localStorage côté client seulement.
-  // Sans ce fix, le serveur rend "0" et le client rend "19" → crash.
-  // On attend que le composant soit monté avant d'afficher les données du store.
-  // ============================================
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
@@ -110,7 +77,6 @@ export function Home({
     useGameStore();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Valeurs sûres pour le SSR (avant hydration)
   const totalXP = isClient ? progress.totalXP : 0;
   const badgesCount = isClient ? progress.badges.length : 0;
   const completedCount = isClient ? progress.completedLevels.length : 0;
@@ -129,24 +95,17 @@ export function Home({
 
   const peutCommencerExamen = isClient && progress.completedLevels.length === 3;
 
-  // ============================================
-  // RENDU
-  // ============================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-      {/* ============================================
-          EN-TÊTE — glisse vers le bas
-          ============================================ */}
       <motion.header
         className="bg-gradient-to-r from-amber-800 via-orange-700 to-amber-800 text-white py-6 shadow-lg"
         variants={slideDown}
         initial="hidden"
         animate="visible"
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: "easeOut" as const }}
       >
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            {/* Logo et titre */}
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-3 rounded-xl">
                 <BookOpen className="w-8 h-8" />
@@ -157,7 +116,6 @@ export function Home({
               </div>
             </div>
 
-            {/* Stats XP et Badges */}
             <div className="flex items-center gap-4">
               <motion.div
                 className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full"
@@ -182,14 +140,7 @@ export function Home({
         </div>
       </motion.header>
 
-      {/* ============================================
-          CONTENU PRINCIPAL
-          ============================================ */}
       <main className="container mx-auto px-4 py-8">
-        {/* ----------------------------------------
-            CARTE : Progression globale
-            Apparaît en fondu + glissement
-            ---------------------------------------- */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -214,7 +165,6 @@ export function Home({
                   className="h-3 bg-amber-100"
                 />
 
-                {/* Scores par niveau — apparaissent en cascade */}
                 <motion.div
                   className="grid grid-cols-3 gap-4 mt-4"
                   variants={staggerContainer}
@@ -258,9 +208,6 @@ export function Home({
           </Card>
         </motion.div>
 
-        {/* ----------------------------------------
-            GRILLE DES 3 NIVEAUX — cascade
-            ---------------------------------------- */}
         <motion.div
           className="grid md:grid-cols-3 gap-6 mb-8"
           variants={staggerContainer}
@@ -277,7 +224,11 @@ export function Home({
                 <motion.div
                   whileHover={!estBloque ? { scale: 1.04, y: -4 } : {}}
                   whileTap={!estBloque ? { scale: 0.97 } : {}}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  transition={{
+                    type: "spring" as const,
+                    stiffness: 300,
+                    damping: 20,
+                  }}
                 >
                   <Card
                     className={`relative overflow-hidden ${
@@ -287,7 +238,6 @@ export function Home({
                     } ${level.bgColor}`}
                     onClick={() => !estBloque && onSelectLevel(level.id)}
                   >
-                    {/* Badge de statut */}
                     <div className="absolute top-0 right-0 p-4">
                       <Badge className={`${statut.color} text-white`}>
                         {statut.text}
@@ -337,9 +287,6 @@ export function Home({
           })}
         </motion.div>
 
-        {/* ----------------------------------------
-            CARTE : Mode Survie — pulse en continu
-            ---------------------------------------- */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -354,18 +301,21 @@ export function Home({
                 "0 0 0px #ea580c",
               ],
             }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut" as const,
+            }}
             className="rounded-xl mb-8"
           >
             <Card className="bg-gradient-to-r from-gray-900 to-black border-2 border-orange-600 text-white overflow-hidden relative">
-              {/* Crâne décoratif */}
               <motion.div
                 className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl opacity-10 select-none"
                 animate={{ rotate: [-3, 3, -3] }}
                 transition={{
                   duration: 4,
                   repeat: Infinity,
-                  ease: "easeInOut",
+                  ease: "easeInOut" as const,
                 }}
               >
                 💀
@@ -385,8 +335,8 @@ export function Home({
 
               <CardContent>
                 <p className="text-gray-300 mb-4">
-                  50 questions mélangées. Une erreur et tout s'arrête. Testez
-                  vos limites et grimpez dans le classement !
+                  50 questions mélangées. Une erreur et tout s&apos;arrête.
+                  Testez vos limites et grimpez dans le classement !
                 </p>
                 <div className="flex items-center gap-6 mb-6 text-sm text-gray-400">
                   <span>💀 Une vie</span>
@@ -411,9 +361,6 @@ export function Home({
           </motion.div>
         </motion.div>
 
-        {/* ----------------------------------------
-            CARTE : Examen Final
-            ---------------------------------------- */}
         <motion.div
           variants={fadeUp}
           initial="hidden"
@@ -475,9 +422,6 @@ export function Home({
           </Card>
         </motion.div>
 
-        {/* ----------------------------------------
-            SECTION : Badges — pop un par un
-            ---------------------------------------- */}
         <AnimatePresence>
           {badges.length > 0 && (
             <motion.div
@@ -544,9 +488,6 @@ export function Home({
           )}
         </AnimatePresence>
 
-        {/* ----------------------------------------
-            BOUTON : Réinitialiser
-            ---------------------------------------- */}
         <motion.div
           className="text-center"
           initial={{ opacity: 0 }}
@@ -563,9 +504,6 @@ export function Home({
           </Button>
         </motion.div>
 
-        {/* ----------------------------------------
-            DIALOGUE : Confirmation de réinitialisation
-            ---------------------------------------- */}
         <AnimatePresence>
           {showResetConfirm && (
             <motion.div
@@ -578,7 +516,11 @@ export function Home({
                 initial={{ scale: 0.85, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.85, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                transition={{
+                  type: "spring" as const,
+                  stiffness: 300,
+                  damping: 25,
+                }}
               >
                 <Card className="max-w-md w-full mx-4">
                   <CardHeader>
