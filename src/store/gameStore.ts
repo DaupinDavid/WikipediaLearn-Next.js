@@ -1,25 +1,15 @@
 "use client";
-/**
- * ============================================
- * STORE - Gestion de l'état global (Zustand)
- * ============================================
- *
- * FIX HYDRATION NEXT.JS :
- * Le problème venait du middleware `persist` qui lit localStorage
- * côté client. Le serveur rendait les valeurs initiales (ex: 0 XP)
- * mais le client les remplaçait immédiatement par les valeurs
- * sauvegardées (ex: 19 XP) → crash "Text content does not match".
- *
- * Solution : `skipHydration: true` dans la config persist.
- * Zustand ne lit plus localStorage automatiquement au montage.
- * À la place, on appelle manuellement `rehydrate()` dans un
- * useEffect côté client uniquement (voir le hook useHydrateStore
- * en bas de ce fichier — à placer dans layout.tsx ou page.tsx).
- */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { UserProgress, Badge, QuizResult, DifficultyLevel, ExamResult } from '@/types';
+import { useEffect } from "react";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type {
+  UserProgress,
+  Badge,
+  QuizResult,
+  DifficultyLevel,
+  ExamResult,
+} from "@/types";
 
 // ============================================
 // INTERFACE DU STORE
@@ -52,9 +42,9 @@ const initialProgress: UserProgress = {
   quizResults: {
     debutant: [],
     intermediaire: [],
-    expert: []
+    expert: [],
   },
-  examResults: []
+  examResults: [],
 };
 
 // ============================================
@@ -63,47 +53,47 @@ const initialProgress: UserProgress = {
 
 export const AVAILABLE_BADGES = {
   DEBUTANT_COMPLETE: {
-    id: 'debutant-complete',
-    name: 'Apprenti Historien',
-    description: 'Vous avez terminé le niveau Débutant !',
-    icon: '🌱'
+    id: "debutant-complete",
+    name: "Apprenti Historien",
+    description: "Vous avez terminé le niveau Débutant !",
+    icon: "🌱",
   },
   INTERMEDIAIRE_COMPLETE: {
-    id: 'intermediaire-complete',
-    name: 'Érudit Médiéval',
-    description: 'Vous avez terminé le niveau Intermédiaire !',
-    icon: '📚'
+    id: "intermediaire-complete",
+    name: "Érudit Médiéval",
+    description: "Vous avez terminé le niveau Intermédiaire !",
+    icon: "📚",
   },
   EXPERT_COMPLETE: {
-    id: 'expert-complete',
-    name: 'Maître du Moyen-Âge',
-    description: 'Vous avez terminé le niveau Expert !',
-    icon: '👑'
+    id: "expert-complete",
+    name: "Maître du Moyen-Âge",
+    description: "Vous avez terminé le niveau Expert !",
+    icon: "👑",
   },
   PERFECT_QUIZ: {
-    id: 'perfect-quiz',
-    name: 'Score Parfait',
-    description: 'Vous avez obtenu 20/20 à un quiz !',
-    icon: '⭐'
+    id: "perfect-quiz",
+    name: "Score Parfait",
+    description: "Vous avez obtenu 20/20 à un quiz !",
+    icon: "⭐",
   },
   SPEED_RUNNER: {
-    id: 'speed-runner',
-    name: 'Éclair',
-    description: 'Vous avez terminé un quiz en moins de 10 minutes !',
-    icon: '⚡'
+    id: "speed-runner",
+    name: "Éclair",
+    description: "Vous avez terminé un quiz en moins de 10 minutes !",
+    icon: "⚡",
   },
   EXAM_COMPLETE: {
-    id: 'exam-complete',
-    name: 'Diplômé',
-    description: 'Vous avez réussi l\'examen final !',
-    icon: '🎓'
+    id: "exam-complete",
+    name: "Diplômé",
+    description: "Vous avez réussi l'examen final !",
+    icon: "🎓",
   },
   ALL_LEVELS: {
-    id: 'all-levels',
-    name: 'Explorateur Complet',
-    description: 'Vous avez terminé tous les niveaux !',
-    icon: '🏆'
-  }
+    id: "all-levels",
+    name: "Explorateur Complet",
+    description: "Vous avez terminé tous les niveaux !",
+    icon: "🏆",
+  },
 };
 
 // ============================================
@@ -119,8 +109,8 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           progress: {
             ...state.progress,
-            totalXP: state.progress.totalXP + amount
-          }
+            totalXP: state.progress.totalXP + amount,
+          },
         }));
       },
 
@@ -131,66 +121,109 @@ export const useGameStore = create<GameState>()(
             newCompletedLevels.push(level);
           }
 
-          const allLevelsCompleted = ['debutant', 'intermediaire', 'expert'].every(
-            l => newCompletedLevels.includes(l as DifficultyLevel)
-          );
+          const allLevelsCompleted = [
+            "debutant",
+            "intermediaire",
+            "expert",
+          ].every((l) => newCompletedLevels.includes(l as DifficultyLevel));
 
           const newBadges = [...state.progress.badges];
 
-          if (level === 'debutant' && !newBadges.find(b => b.id === AVAILABLE_BADGES.DEBUTANT_COMPLETE.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.DEBUTANT_COMPLETE, unlockedAt: new Date() });
+          if (
+            level === "debutant" &&
+            !newBadges.find(
+              (b) => b.id === AVAILABLE_BADGES.DEBUTANT_COMPLETE.id,
+            )
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.DEBUTANT_COMPLETE,
+              unlockedAt: new Date(),
+            });
           }
-          if (level === 'intermediaire' && !newBadges.find(b => b.id === AVAILABLE_BADGES.INTERMEDIAIRE_COMPLETE.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.INTERMEDIAIRE_COMPLETE, unlockedAt: new Date() });
+          if (
+            level === "intermediaire" &&
+            !newBadges.find(
+              (b) => b.id === AVAILABLE_BADGES.INTERMEDIAIRE_COMPLETE.id,
+            )
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.INTERMEDIAIRE_COMPLETE,
+              unlockedAt: new Date(),
+            });
           }
-          if (level === 'expert' && !newBadges.find(b => b.id === AVAILABLE_BADGES.EXPERT_COMPLETE.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.EXPERT_COMPLETE, unlockedAt: new Date() });
+          if (
+            level === "expert" &&
+            !newBadges.find((b) => b.id === AVAILABLE_BADGES.EXPERT_COMPLETE.id)
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.EXPERT_COMPLETE,
+              unlockedAt: new Date(),
+            });
           }
-          if (allLevelsCompleted && !newBadges.find(b => b.id === AVAILABLE_BADGES.ALL_LEVELS.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.ALL_LEVELS, unlockedAt: new Date() });
+          if (
+            allLevelsCompleted &&
+            !newBadges.find((b) => b.id === AVAILABLE_BADGES.ALL_LEVELS.id)
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.ALL_LEVELS,
+              unlockedAt: new Date(),
+            });
           }
 
           return {
             progress: {
               ...state.progress,
               completedLevels: newCompletedLevels,
-              badges: newBadges
-            }
+              badges: newBadges,
+            },
           };
         });
       },
 
       addBadge: (badge: Badge) => {
         set((state) => {
-          if (state.progress.badges.find(b => b.id === badge.id)) return state;
+          if (state.progress.badges.find((b) => b.id === badge.id))
+            return state;
           return {
             progress: {
               ...state.progress,
-              badges: [...state.progress.badges, badge]
-            }
+              badges: [...state.progress.badges, badge],
+            },
           };
         });
       },
 
       saveQuizResults: (level: DifficultyLevel, results: QuizResult[]) => {
         set((state) => {
-          const correctAnswers = results.filter(r => r.correct).length;
-          const totalTime      = results.reduce((sum, r) => sum + r.timeSpent, 0);
-          const newBadges      = [...state.progress.badges];
+          const correctAnswers = results.filter((r) => r.correct).length;
+          const totalTime = results.reduce((sum, r) => sum + r.timeSpent, 0);
+          const newBadges = [...state.progress.badges];
 
-          if (correctAnswers === 20 && !newBadges.find(b => b.id === AVAILABLE_BADGES.PERFECT_QUIZ.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.PERFECT_QUIZ, unlockedAt: new Date() });
+          if (
+            correctAnswers === 20 &&
+            !newBadges.find((b) => b.id === AVAILABLE_BADGES.PERFECT_QUIZ.id)
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.PERFECT_QUIZ,
+              unlockedAt: new Date(),
+            });
           }
-          if (totalTime < 600 && !newBadges.find(b => b.id === AVAILABLE_BADGES.SPEED_RUNNER.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.SPEED_RUNNER, unlockedAt: new Date() });
+          if (
+            totalTime < 600 &&
+            !newBadges.find((b) => b.id === AVAILABLE_BADGES.SPEED_RUNNER.id)
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.SPEED_RUNNER,
+              unlockedAt: new Date(),
+            });
           }
 
           return {
             progress: {
               ...state.progress,
               quizResults: { ...state.progress.quizResults, [level]: results },
-              badges: newBadges
-            }
+              badges: newBadges,
+            },
           };
         });
       },
@@ -198,21 +231,31 @@ export const useGameStore = create<GameState>()(
       saveExamResults: (result: ExamResult) => {
         set((state) => {
           const newExamResults = [...state.progress.examResults, result];
-          const newBadges      = [...state.progress.badges];
+          const newBadges = [...state.progress.badges];
 
-          if (newExamResults.length >= 3 && !newBadges.find(b => b.id === AVAILABLE_BADGES.EXAM_COMPLETE.id)) {
-            newBadges.push({ ...AVAILABLE_BADGES.EXAM_COMPLETE, unlockedAt: new Date() });
+          if (
+            newExamResults.length >= 3 &&
+            !newBadges.find((b) => b.id === AVAILABLE_BADGES.EXAM_COMPLETE.id)
+          ) {
+            newBadges.push({
+              ...AVAILABLE_BADGES.EXAM_COMPLETE,
+              unlockedAt: new Date(),
+            });
           }
 
           return {
-            progress: { ...state.progress, examResults: newExamResults, badges: newBadges }
+            progress: {
+              ...state.progress,
+              examResults: newExamResults,
+              badges: newBadges,
+            },
           };
         });
       },
 
       setCurrentLevel: (level: DifficultyLevel | null) => {
         set((state) => ({
-          progress: { ...state.progress, currentLevel: level }
+          progress: { ...state.progress, currentLevel: level },
         }));
       },
 
@@ -222,23 +265,25 @@ export const useGameStore = create<GameState>()(
 
       canAccessLevel: (level: DifficultyLevel) => {
         const { completedLevels } = get().progress;
-        if (level === 'debutant')      return true;
-        if (level === 'intermediaire') return completedLevels.includes('debutant');
-        if (level === 'expert')        return completedLevels.includes('intermediaire');
+        if (level === "debutant") return true;
+        if (level === "intermediaire")
+          return completedLevels.includes("debutant");
+        if (level === "expert")
+          return completedLevels.includes("intermediaire");
         return false;
       },
 
       getLevelScore: (level: DifficultyLevel) => {
         const results = get().progress.quizResults[level];
         if (!results || results.length === 0) return 0;
-        return results.filter(r => r.correct).length;
+        return results.filter((r) => r.correct).length;
       },
 
       getTotalCorrectAnswers: () => {
         const { quizResults } = get().progress;
         let total = 0;
-        Object.values(quizResults).forEach(results => {
-          total += results.filter(r => r.correct).length;
+        Object.values(quizResults).forEach((results) => {
+          total += results.filter((r) => r.correct).length;
         });
         return total;
       },
@@ -248,48 +293,22 @@ export const useGameStore = create<GameState>()(
         if (examResults.length === 0) return 0;
         const total = examResults.reduce((sum, r) => sum + r.score, 0);
         return Math.round((total / examResults.length) * 100) / 100;
-      }
+      },
     }),
     {
-      name: 'wikipedia-learn-storage',
+      name: "wikipedia-learn-storage",
       partialize: (state) => ({ progress: state.progress }),
-
-      // ============================================
-      // FIX HYDRATION — LA CLÉ DU CORRECTIF
-      // ============================================
-      // skipHydration: true empêche Zustand de lire localStorage
-      // automatiquement au montage du composant côté serveur.
-      // Sans ça : serveur rend "0", client lit "19" → crash.
-      // Avec ça  : les deux rendent "0", puis le client charge
-      // les vraies valeurs via rehydrate() dans useEffect.
       skipHydration: true,
-    }
-  )
+    },
+  ),
 );
 
 // ============================================
-// HOOK : À utiliser UNE SEULE FOIS dans layout.tsx
+// HOOK useHydrateStore
 // ============================================
-// Ce hook déclenche manuellement la lecture de localStorage
-// uniquement côté client, après le premier rendu.
-//
-// Usage dans app/layout.tsx :
-//
-//   import { useHydrateStore } from '@/store/gameStore'
-//
-//   export default function RootLayout({ children }) {
-//     useHydrateStore()  // ← une seule ligne à ajouter
-//     return <html><body>{children}</body></html>
-//   }
-//
-// ⚠️  layout.tsx doit avoir "use client" pour utiliser ce hook.
-
-import { useEffect } from 'react';
 
 export function useHydrateStore() {
   useEffect(() => {
-    // Déclenche la lecture de localStorage une seule fois,
-    // après que React a terminé le rendu initial côté client.
     useGameStore.persist.rehydrate();
   }, []);
 }
