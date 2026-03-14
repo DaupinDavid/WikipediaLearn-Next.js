@@ -1,7 +1,7 @@
 "use client";
 /**
  * ============================================
- * MODE SURVIE (ModeSurvie.tsx)
+ * MODE SURVIE
  * ============================================
  */
 
@@ -610,7 +610,7 @@ export function ModeSurvie({ onExit }: ModeSurvieProps) {
           </Card>
         </motion.div>
 
-        {/* Question — slide depuis la droite (remplace l'animation CSS) */}
+        {/* Question — slide depuis la droite */}
         <AnimatePresence mode="wait">
           <motion.div
             key={indexActuel}
