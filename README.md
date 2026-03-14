@@ -10,6 +10,19 @@ Ce projet démontre ma capacité à concevoir des architectures frontend robuste
 
 ---
 
+## Fonctionnalités
+
+- 3 niveaux progressifs : Débutant → Intermédiaire → Expert
+- Cours de révision avant chaque quiz
+- Timer de 45 secondes par question
+- Système XP et badges
+- Examen final déblocable (3 séries de 20 questions)
+- Mode Survie : 50 questions, une seule erreur élimine
+- Progression sauvegardée en localStorage
+- Animations Framer Motion
+
+---
+
 ## Installation et lancement
 
 ```bash
@@ -95,16 +108,3 @@ npx vercel --prod
 # Netlify
 netlify deploy --prod
 ```
-
----
-
-## Fonctionnalités
-
-- 3 niveaux progressifs : Débutant → Intermédiaire → Expert
-- Cours de révision avant chaque quiz
-- Timer de 45 secondes par question
-- Système XP et badges
-- Examen final déblocable (3 séries de 20 questions)
-- Mode Survie : 50 questions, une seule erreur élimine
-- Progression sauvegardée en localStorage
-- Animations Framer Motion
